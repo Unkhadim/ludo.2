@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ludo Amis 🎲</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --red: #e74c3c; --red-light: #ff6b6b; --red-dark: #c0392b;
+    --blue: #3498db; --blue-light: #5dade2; --blue-dark: #2980b9;
+    --green: #2ecc71; --green-light: #58d68d; --green-dark: #27ae60;
+    --yellow: #f1c40f; --yellow-light: #f4d03f; --yellow-dark: #d4ac0d;
+    --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+    --white: #f0f0f0; --gray: #666;
+    --cell: 52px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #f1c40f, #e74c3c, #3498db, #2ecc71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 16px 0 4px;
+    text-shadow: none;
+    letter-spacing: 2px;
+  }
+
+  .subtitle { color: #aaa; font-size: 0.85rem; margin-bottom: 12px; }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; width: 100%; max-width: 480px; padding: 0 16px; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--bg2);
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .card h2 { font-family: 'Fredoka One', cursive; margin-bottom: 12px; font-size: 1.2rem; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800;
+    transition: all 0.15s; width: 100%; letter-spacing: 0.5px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+  .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+  .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
+  .btn-gray { background: rgba(255,255,255,0.08); color: #ccc; }
+  .btn-sm { padding: 8px 16px; font-size: 0.85rem; width: auto; border-radius: 8px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ===== INPUTS ===== */
+  input[type=text], input[type=number] {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    color: white;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--blue); }
+  input::placeholder { color: #555; }
+
+  label { font-size: 0.85rem; color: #aaa; margin-bottom: 4px; display: block; }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; width: 100%; margin-bottom: 8px; }
+
+  /* ===== COLOR PICKER ===== */
+  .color-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+  .color-opt {
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .color-opt.selected { border-color: white; transform: scale(1.15); }
+  .color-opt[data-color="red"] { background: var(--red); }
+  .color-opt[data-color="blue"] { background: var(--blue); }
+  .color-opt[data-color="green"] { background: var(--green); }
+  .color-opt[data-color="yellow"] { background: var(--yellow); }
+
+  /* ===== CODE DISPLAY ===== */
+  .code-box {
+    background: var(--bg3);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.5rem;
+    letter-spacing: 10px;
+    color: var(--yellow);
+    border: 2px dashed rgba(241,196,15,0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .code-box:hover { border-color: var(--yellow); background: rgba(241,196,15,0.05); }
+  .code-hint { font-size: 0.75rem; color: #666; margin-top: 6px; text-align: center; }
+
+  /* ===== PLAYER LIST ===== */
+  .player-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .player-item {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px; padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .player-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .player-dot.red { background: var(--red); }
+  .player-dot.blue { background: var(--blue); }
+  .player-dot.green { background: var(--green); }
+  .player-dot.yellow { background: var(--yellow); }
+  .player-name { flex: 1; font-weight: 700; }
+  .player-badge {
+    font-size: 0.7rem; padding: 2px 8px; border-radius: 20px;
+    background: rgba(255,255,255,0.08); color: #aaa;
+  }
+  .player-badge.host { background: rgba(241,196,15,0.15); color: var(--yellow); }
+  .player-badge.you { background: rgba(46,204,113,0.15); color: var(--green); }
+
+  /* ===== STATUS ===== */
+  .status-bar {
+    text-align: center; font-size: 0.85rem; color: #aaa;
+    background: rgba(255,255,255,0.04); border-radius: 8px;
+    padding: 8px 12px; width: 100%;
+  }
+  .status-bar .highlight { color: white; font-weight: 700; }
+
+  /* ===== GAME SCREEN ===== */
+  #screen-game {
+    max-width: 600px;
+    padding: 0 8px 16px;
+  }
+
+  .game-header {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 4px; gap: 8px;
+  }
+
+  .turn-indicator {
+    flex: 1; text-align: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    padding: 6px 12px; border-radius: 20px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* ===== BOARD ===== */
+  .board-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #ludo-board {
+    --sz: min(calc(100vw - 16px), 560px);
+    width: var(--sz);
+    height: var(--sz);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  #board-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ===== DICE ===== */
+  .dice-row {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    width: 100%; margin-top: 8px;
+  }
+
+  .dice {
+    width: 64px; height: 64px; background: white;
+    border-radius: 14px; cursor: pointer;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    padding: 10px; gap: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .dice:hover:not(.disabled) { transform: scale(1.05); }
+  .dice:active:not(.disabled) { transform: scale(0.95); }
+  .dice.disabled { opacity: 0.4; cursor: not-allowed; }
+  .dice.rolling { animation: roll 0.5s ease-out; }
+
+  @keyframes roll {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(15deg) scale(1.1); }
+    50% { transform: rotate(-10deg) scale(0.95); }
+    75% { transform: rotate(5deg) scale(1.05); }
+    100% { transform: rotate(0deg) scale(1); }
+  }
+
+  .dot {
+    width: 100%; height: 100%;
+    background: #333; border-radius: 50%;
+  }
+  .dot.hidden { background: transparent; }
+
+  .dice-msg {
+    font-size: 0.9rem; color: #aaa; text-align: center; flex: 1;
+    line-height: 1.4;
+  }
+  .dice-msg strong { color: white; display: block; font-size: 1.1rem; }
+
+  /* ===== PION ===== */
+  .pion {
+    position: absolute;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    border: 3px solid rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; color: rgba(0,0,0,0.5);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+    transition: transform 0.3s, box-shadow 0.2s;
+    z-index: 5;
+    pointer-events: all;
+  }
+  .pion:hover { transform: translate(-50%, -50%) scale(1.15); z-index: 10; }
+  .pion.movable {
+    animation: pulse 0.8s infinite alternate;
+    cursor: pointer;
+    z-index: 8;
+  }
+  .pion.red { background: radial-gradient(circle at 35% 35%, #ff8a80, var(--red)); }
+  .pion.blue { background: radial-gradient(circle at 35% 35%, #80d4ff, var(--blue)); }
+  .pion.green { background: radial-gradient(circle at 35% 35%, #80ffaa, var(--green)); }
+  .pion.yellow { background: radial-gradient(circle at 35% 35%, #fff176, var(--yellow)); }
+
+  @keyframes pulse {
+    from { box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 0 0 rgba(255,255,255,0.4); }
+    to { box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 0 8px rgba(255,255,255,0); }
+  }
+
+  /* ===== SCORES ===== */
+  .scores-row {
+    display: flex; gap: 8px; width: 100%; flex-wrap: wrap;
+  }
+  .score-card {
+    flex: 1; min-width: 80px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px; padding: 8px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+  }
+  .score-card.active { border-color: currentColor; }
+  .score-card.red { color: var(--red-light); }
+  .score-card.blue { color: var(--blue-light); }
+  .score-card.green { color: var(--green-light); }
+  .score-card.yellow { color: var(--yellow-light); }
+  .score-name { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
+  .score-val { font-family: 'Fredoka One', cursive; font-size: 1.4rem; }
+
+  /* ===== WINNER ===== */
+  .winner-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; z-index: 1000;
+    display: none;
+  }
+  .winner-overlay.show { display: flex; }
+  .winner-box {
+    background: var(--bg2); border-radius: 24px; padding: 40px;
+    text-align: center; max-width: 320px; width: 90%;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+  .winner-emoji { font-size: 5rem; margin-bottom: 12px; }
+  .winner-title { font-family: 'Fredoka One', cursive; font-size: 2rem; margin-bottom: 8px; }
+  .winner-sub { color: #aaa; margin-bottom: 24px; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: rgba(30,30,50,0.95); color: white;
+    padding: 12px 24px; border-radius: 30px;
+    font-size: 0.9rem; font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    transition: transform 0.3s; z-index: 2000;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ===== WAITING ===== */
+  .waiting-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+  }
+  @keyframes dots {
+    0% { content: ''; }
+    33% { content: '.'; }
+    66% { content: '..'; }
+    100% { content: '...'; }
+  }
+
+  .divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    margin: 4px 0;
+  }
+
+  .flex-row { display: flex; gap: 8px; width: 100%; }
+  .flex-row .btn { flex: 1; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 400px) {
+    :root { --cell: 44px; }
+    h1 { font-size: 2rem; }
+    .pion { width: 28px; height: 28px; }
+    .dice { width: 52px; height: 52px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎲 LUDO AMIS</h1>
+<p class="subtitle">Joue avec tes amis, sans pub, sans limite</p>
+
+<!-- ===== SCREEN: HOME ===== -->
+<div id="screen-home" class="screen active">
+  <div class="card">
+    <h2>👤 Ton profil</h2>
+    <div class="form-group">
+      <label>Ton prénom / pseudo</label>
+      <input type="text" id="inp-name" placeholder="Ex: Thomas" maxlength="16">
+    </div>
+    <div class="form-group">
+      <label>Ta couleur</label>
+      <div class="color-grid" id="color-grid">
+        <div class="color-opt selected" data-color="red">🔴</div>
+        <div class="color-opt" data-color="blue">🔵</div>
+        <div class="color-opt" data-color="green">🟢</div>
+        <div class="color-opt" data-color="yellow">🟡</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎮 Créer une partie</h2>
+    <p style="color:#aaa;font-size:0.85rem;margin-bottom:12px">Un code sera généré — partage-le à tes amis</p>
+    <div class="form-group">
+      <label>Nombre de joueurs (2-4)</label>
+      <input type="number" id="inp-maxplayers" value="4" min="2" max="4">
+    </div>
+    <button class="btn btn-primary" onclick="createGame()">🚀 Créer la partie</button>
+  </div>
+
+  <div class="card">
+    <h2>🔗 Rejoindre avec un code</h2>
+    <div class="form-group">
+      <label>Code de la salle (4 chiffres)</label>
+      <input type="text" id="inp-code" placeholder="Ex: 4827" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <button class="btn btn-blue" onclick="joinGame()">🎯 Rejoindre</button>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:0.8rem;color:#555">
+      🌐 Multijoueur en temps réel • Gratuit • Sans inscription
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN: LOBBY ===== -->
+<div id="screen-lobby" class="screen">
+  <div class="card">
+    <h2>📋 Code de la salle</h2>
+    <div class="code-box" id="code-display" onclick="copyCode()">----</div>
+    <p class="code-hint">👆 Clique pour copier • Partage ce code à tes amis</p>
+  </div>
+
+  <div class="card">
+    <h2>👥 Joueurs <span id="player-count" style="color:#aaa;font-size:0.9rem">(0/4)</span></h2>
+    <div class="player-list" id="lobby-players"></div>
+    <div class="divider" style="margin:12px 0"></div>
+    <div class="status-bar" id="lobby-status">En attente de joueurs<span class="waiting-dots"></span></div>
+  </div>
+
+  <button class="btn btn-green" id="btn-start" onclick="startGame()" disabled>
+    ▶️ Lancer la partie
+  </button>
+  <button class="btn btn-gray" onclick="leaveLobby()">↩ Retour</button>
+</div>
+
+<!-- ===== SCREEN: GAME ===== -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="turn-indicator" id="turn-indicator">Tour de...</div>
+    <button class="btn btn-gray btn-sm" onclick="leaveGame()">✕</button>
+  </div>
+
+  <div class="scores-row" id="scores-row"></div>
+
+  <div class="board-wrap">
+    <div id="ludo-board">
+      <svg id="board-svg" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg">
+        <!-- Board drawn by JS -->
+      </svg>
+      <!-- Pions overlay -->
+      <div id="pions-layer" style="position:absolute;inset:0;pointer-events:none;"></div>
+    </div>
+  </div>
+
+  <div class="dice-row">
+    <div class="dice disabled" id="dice" onclick="rollDice()">
+      <!-- dots drawn by JS -->
+    </div>
+    <div class="dice-msg" id="dice-msg"><strong>—</strong>En attente...</div>
+  </div>
+</div>
+
+<!-- Winner Overlay -->
+<div class="winner-overlay" id="winner-overlay">
+  <div class="winner-box">
+    <div class="winner-emoji" id="winner-emoji">🏆</div>
+    <div class="winner-title" id="winner-title">Victoire!</div>
+    <div class="winner-sub" id="winner-sub">a gagné la partie!</div>
+    <button class="btn btn-primary" onclick="backToHome()">🏠 Retour à l'accueil</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let myName = '';
+let myColor = 'red';
+let roomCode = '';
+let isHost = false;
+let maxPlayers = 4;
+let myPlayerId = null; // assigned by server
+let ws = null;
+let gameState = null; // full game state from server
+
+// ============================================================
+// PARTYKIT SERVER URL
+// We use a free public relay if partykit not available,
+// otherwise embed a simple peer-based approach using BroadcastChannel
+// for local + a free WebSocket relay
+// ============================================================
+
+// We'll use a free public signaling server approach via localStorage
+// cross-tab communication for demo, but for REAL multiplayer across
+// devices we need a relay. Let's use a Firebase-free approach:
+// We'll implement it with a simple polling server using jsonbin.io (free)
+// OR better: use the window.BroadcastChannel for same-device testing
+// AND a simple WebSocket echo server for cross-device
+
+// Actually let's use a clever trick: use window.postMessage + SharedWorker
+// for local, and for real online play, use a free WebSocket service.
+
+// BEST FREE OPTION: Use Ably free tier (no credit card, 3M messages/month)
+// OR: implement our own lightweight sync with localStorage events (cross-tab)
+// For simplicity and zero-setup, let's use localStorage + polling
+// with a public free KV store (JSONBlob / kvdb.io)
+
+// We'll use kvdb.io which is completely free and no account needed
+const KV_URL = 'https://kvdb.io/9s5BHZNj7GvPVfCMEBBN4x'; // free bucket
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, duration = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// Color picker
+document.getElementById('color-grid').addEventListener('click', e => {
+  const opt = e.target.closest('.color-opt');
+  if (!opt) return;
+  document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('selected'));
+  opt.classList.add('selected');
+  myColor = opt.dataset.color;
+});
+
+// ============================================================
+// ROOM / KV HELPERS
+// ============================================================
+function generateCode() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+function generatePlayerId() {
+  return Math.random().toString(36).substr(2, 8);
+}
+
+async function kvSet(key, value) {
+  try {
+    await fetch(`${KV_URL}/${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(value)
+    });
+  } catch(e) { console.error('kvSet', e); }
+}
+
+async function kvGet(key) {
+  try {
+    const r = await fetch(`${KV_URL}/${key}`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ============================================================
+// HOME ACTIONS
+// ============================================================
+async function createGame() {
+  myName = document.getElementById('inp-name').value.trim() || 'Joueur';
+  maxPlayers = parseInt(document.getElementById('inp-maxplayers').value) || 4;
+  
+  if (!myName) { toast('✏️ Entre ton prénom !'); return; }
+
+  myPlayerId = generatePlayerId();
+  roomCode = generateCode();
+  isHost = true;
+
+  const room = {
+    code: roomCode,
+    host: myPlayerId,
+    maxPlayers,
+    status: 'waiting', // waiting | playing | finished
+    players: [{
+      id: myPlayerId,
+      name: myName,
+      color: myColor,
+      ready: false
+    }],
+    game: null,
+    lastUpdate: Date.now()
+  };
+
+  toast('⏳ Création de la salle...');
+  await kvSet(`ludo_${roomCode}`, room);
+
+  showScreen('screen-lobby');
+  renderLobby(room);
+  startPolling();
+}
+
+async function joinGame() {
+  myName = document.getElementById('inp-name').value.trim() || 'Joueur';
+  const code = document.getElementById('inp-code').value.trim();
+
+  if (!myName) { toast('✏️ Entre ton prénom !'); return; }
+  if (!code) { toast('🔑 Entre un code de salle !'); return; }
+
+  toast('🔍 Recherche de la salle...');
+  const room = await kvGet(`ludo_${code}`);
+
+  if (!room) { toast('❌ Salle introuvable !'); return; }
+  if (room.status === 'playing') { toast('🎮 Partie déjà en cours !'); return; }
+  if (room.players.length >= room.maxPlayers) { toast('😅 Salle pleine !'); return; }
+
+  // Check color conflict
+  let chosenColor = myColor;
+  const takenColors = room.players.map(p => p.color);
+  if (takenColors.includes(chosenColor)) {
+    const colors = ['red','blue','green','yellow'];
+    chosenColor = colors.find(c => !takenColors.includes(c));
+    if (!chosenColor) { toast('😅 Salle pleine !'); return; }
+    myColor = chosenColor;
+  }
+
+  myPlayerId = generatePlayerId();
+  roomCode = code;
+  isHost = false;
+
+  room.players.push({
+    id: myPlayerId,
+    name: myName,
+    color: myColor,
+    ready: false
+  });
+  room.lastUpdate = Date.now();
+
+  await kvSet(`ludo_${roomCode}`, room);
+
+  showScreen('screen-lobby');
+  renderLobby(room);
+  startPolling();
+}
+
+// ============================================================
+// LOBBY
+// ============================================================
+let pollingInterval = null;
+let lastRoomUpdate = 0;
+
+function startPolling() {
+  stopPolling();
+  pollingInterval = setInterval(pollRoom, 1500);
+}
+
+function stopPolling() {
+  if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+}
+
+async function pollRoom() {
+  if (!roomCode) return;
+  const room = await kvGet(`ludo_${roomCode}`);
+  if (!room) return;
+  if (room.lastUpdate === lastRoomUpdate) return;
+  lastRoomUpdate = room.lastUpdate;
+
+  if (room.status === 'waiting') {
+    renderLobby(room);
+  } else if (room.status === 'playing') {
+    if (document.getElementById('screen-game').classList.contains('active')) {
+      // already in game, update
+      gameState = room.game;
+      renderGame();
+    } else {
+      // transition to game
+      gameState = room.game;
+      showScreen('screen-game');
+      renderGame();
+    }
+  } else if (room.status === 'finished') {
+    showWinner(room.game);
+  }
+}
+
+function renderLobby(room) {
+  document.getElementById('code-display').textContent = room.code;
+  document.getElementById('player-count').textContent = `(${room.players.length}/${room.maxPlayers})`;
+
+  const list = document.getElementById('lobby-players');
+  list.innerHTML = room.players.map(p => `
+    <div class="player-item">
+      <div class="player-dot ${p.color}"></div>
+      <div class="player-name">${p.name}</div>
+      ${p.id === room.host ? '<span class="player-badge host">⭐ Hôte</span>' : ''}
+      ${p.id === myPlayerId ? '<span class="player-badge you">Toi</span>' : ''}
+    </div>
+  `).join('');
+
+  const statusEl = document.getElementById('lobby-status');
+  const btnStart = document.getElementById('btn-start');
+
+  if (room.players.length < 2) {
+    statusEl.innerHTML = `En attente de joueurs<span class="waiting-dots"></span>`;
+    btnStart.disabled = true;
+  } else {
+    statusEl.innerHTML = `<span class="highlight">${room.players.length} joueur(s)</span> connecté(s) — ${isHost ? 'tu peux lancer !' : 'attente du démarrage...'}`;
+    btnStart.disabled = !(isHost && room.players.length >= 2);
+  }
+}
+
+function copyCode() {
+  navigator.clipboard?.writeText(roomCode).catch(() => {});
+  toast('✅ Code copié ! Partage-le à tes amis');
+}
+
+async function leaveLobby() {
+  if (!roomCode) { showScreen('screen-home'); return; }
+  
+  const room = await kvGet(`ludo_${roomCode}`);
+  if (room) {
+    room.players = room.players.filter(p => p.id !== myPlayerId);
+    room.lastUpdate = Date.now();
+    if (room.players.length === 0) {
+      // Delete room (set empty)
+      await kvSet(`ludo_${roomCode}`, { deleted: true });
+    } else {
+      if (isHost && room.players.length > 0) room.host = room.players[0].id;
+      await kvSet(`ludo_${roomCode}`, room);
+    }
+  }
+  stopPolling();
+  roomCode = '';
+  showScreen('screen-home');
+}
+
+async function startGame() {
+  const room = await kvGet(`ludo_${roomCode}`);
+  if (!room) { toast('❌ Erreur'); return; }
+  
+  room.status = 'playing';
+  room.game = initGameState(room.players);
+  room.lastUpdate = Date.now();
+  
+  await kvSet(`ludo_${roomCode}`, room);
+}
+
+// ============================================================
+// GAME LOGIC
+// ============================================================
+const BOARD_SIZE = 15;
+const COLORS = ['red','blue','green','yellow'];
+
+// Path cells (clockwise from red start)
+// The ludo board is 15x15 with a 6x6 center
+// Standard ludo path: 52 cells + 6 colored home cells = 58 total per player
+
+function initGameState(players) {
+  const state = {
+    players: players.map((p, i) => ({
+      ...p,
+      pions: [
+        { id: 0, pos: -1 }, // -1 = at home base
+        { id: 1, pos: -1 },
+        { id: 2, pos: -1 },
+        { id: 3, pos: -1 },
+      ],
+      score: 0, // pions home = finished
+      finished: false
+    })),
+    currentPlayerIdx: 0,
+    dice: null,
+    diceRolled: false,
+    movablePions: [],
+    phase: 'roll', // roll | move
+    winner: null,
+    turnCount: 0
+  };
+  return state;
+}
+
+// === PATH DEFINITION ===
+// Standard ludo path for each color (row, col) in 15x15 grid
+// Color start positions (first cell outside base)
+// Order: red starts at row=6,col=1 going down; blue at row=1,col=8 going right;
+// green at row=8,col=13 going up; yellow at row=13,col=6 going left
+
+// I'll define the full 52-cell main path + 5-cell colored home column
+// Cells are 0-indexed
+
+function buildPath(color) {
+  // Main 52-cell path (shared, but each color has a different start offset)
+  // Then 5 home cells specific to color
+  
+  // Full main board path (0-51), absolute board coordinates
+  const mainPath = [
+    // Red: starts at index 0
+    [6,1],[5,1],[4,1],[3,1],[2,1],[1,1],           // going up left col
+    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],            // top row going right
+    [0,7], // blue safe
+    [0,8],[0,9],[0,10],[0,11],[0,12],[0,13],        // top row cont
+    [1,13],[2,13],[3,13],[4,13],[5,13],[6,13],      // right col going down
+    [7,13], // green safe start
+    [8,13],[9,13],[10,13],[11,13],[12,13],[13,13],  // right col cont
+    [13,12],[13,11],[13,10],[13,9],[13,8],          // bottom going left
+    [13,7], // yellow safe
+    [13,6],[13,5],[13,4],[13,3],[13,2],[13,1],      // bottom cont
+    [12,1],[11,1],[10,1],[9,1],[8,1],[7,1],         // left col going up
+    // back to red safe [7,0] then into red home
+  ];
+
+  // Start indices for each color on main path
+  const startIdx = { red: 0, blue: 13, green: 26, yellow: 39 };
+  
+  // Home columns (5 cells leading to center)
+  const homePath = {
+    red:    [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
+    blue:   [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
+    green:  [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],
+    yellow: [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
+  };
+
+  // Build full path for this color: reorder main path + home
+  const si = startIdx[color];
+  const reordered = [...mainPath.slice(si), ...mainPath.slice(0, si)];
+  
+  return [...reordered, ...homePath[color]];
+}
+
+const PATHS = {};
+COLORS.forEach(c => PATHS[c] = buildPath(c));
+
+// Safe cells (star cells on board)
+const SAFE_CELLS_BOARD = [
+  [6,1],[2,6],[1,8],[6,12],[8,13],[12,8],[13,6],[8,2],
+  [7,0] // won't be needed
+];
+
+function cellKey(r, c) { return `${r},${c}`; }
+const SAFE_SET = new Set(SAFE_CELLS_BOARD.map(([r,c]) => cellKey(r,c)));
+
+// Base positions for pions when at home
+const BASE_POSITIONS = {
+  red:    [[2,2],[2,4],[4,2],[4,4]],
+  blue:   [[2,10],[2,12],[4,10],[4,12]],
+  green:  [[10,10],[10,12],[12,10],[12,12]],
+  yellow: [[10,2],[10,4],[12,2],[12,4]],
+};
+
+// ============================================================
+// GAME ACTIONS
+// ============================================================
+async function rollDice() {
+  if (!gameState) return;
+  
+  const myPlayerObj = gameState.players.find(p => p.id === myPlayerId);
+  if (!myPlayerObj) return;
+  
+  const curPlayer = gameState.players[gameState.currentPlayerIdx];
+  if (curPlayer.id !== myPlayerId) { toast('⏳ Ce n\'est pas ton tour !'); return; }
+  if (gameState.diceRolled) { toast('🎲 Tu as déjà lancé !'); return; }
+
+  // Animate
+  const diceEl = document.getElementById('dice');
+  diceEl.classList.add('rolling');
+  setTimeout(() => diceEl.classList.remove('rolling'), 500);
+
+  const roll = Math.floor(Math.random() * 6) + 1;
+  gameState.dice = roll;
+  gameState.diceRolled = true;
+
+  // Find movable pions
+  gameState.movablePions = getMovablePions(curPlayer, roll);
+
+  if (gameState.movablePions.length === 0) {
+    // No moves: next turn (unless 6)
+    if (roll === 6) {
+      // With 6 all pions still at base and no one on path? nothing to do
+    }
+    await endTurn(gameState);
+  } else if (gameState.movablePions.length === 1) {
+    // Auto-move if only one option
+    await movePion(curPlayer, gameState.movablePions[0], roll);
+  } else {
+    gameState.phase = 'move';
+    await saveGameState();
+  }
+}
+
+function getMovablePions(player, roll) {
+  const movable = [];
+  player.pions.forEach(pion => {
+    if (pion.pos === 57) return; // already finished
+    if (pion.pos === -1) {
+      if (roll === 6) movable.push(pion.id);
+    } else {
+      const newPos = pion.pos + roll;
+      if (newPos <= 57) movable.push(pion.id);
+    }
+  });
+  return movable;
+}
+
+async function clickPion(playerId, pionId) {
+  if (!gameState || gameState.phase !== 'move') return;
+  
+  const curPlayer = gameState.players[gameState.currentPlayerIdx];
+  if (curPlayer.id !== myPlayerId) return;
+  if (curPlayer.id !== playerId) return;
+  if (!gameState.movablePions.includes(pionId)) return;
+
+  await movePion(curPlayer, pionId, gameState.dice);
+}
+
+async function movePion(player, pionId, roll) {
+  const pion = player.pions.find(p => p.id === pionId);
+  if (!pion) return;
+
+  if (pion.pos === -1) {
+    pion.pos = 0; // exit base
+  } else {
+    pion.pos += roll;
+  }
+
+  let bonusTurn = false;
+
+  if (pion.pos === 57) {
+    // Reached home!
+    player.score++;
+    toast(`🏆 ${player.name} marque !`);
+    bonusTurn = true;
+  } else {
+    const cell = PATHS[player.color][pion.pos];
+    
+    // Check captures (only on non-safe, non-home cells, pos < 52)
+    if (pion.pos < 52) {
+      const cellK = cellKey(cell[0], cell[1]);
+      const isSafe = SAFE_SET.has(cellK);
+      
+      if (!isSafe) {
+        gameState.players.forEach(other => {
+          if (other.id === player.id) return;
+          other.pions.forEach(op => {
+            if (op.pos === -1 || op.pos === 57) return;
+            const otherCell = PATHS[other.color][op.pos];
+            if (otherCell[0] === cell[0] && otherCell[1] === cell[1]) {
+              op.pos = -1; // send back
+              toast(`💥 ${player.name} capture ${other.name} !`);
+              bonusTurn = true;
+            }
+          });
+        });
+      }
+    }
+
+    if (roll === 6) bonusTurn = true;
+  }
+
+  // Check if player finished all pions
+  if (player.pions.every(p => p.pos === 57)) {
+    player.finished = true;
+    gameState.winner = player.id;
+    gameState.phase = 'finished';
+    await saveGameState(true);
+    return;
+  }
+
+  if (bonusTurn) {
+    gameState.diceRolled = false;
+    gameState.movablePions = [];
+    gameState.phase = 'roll';
+  } else {
+    await endTurn(gameState);
+    return;
+  }
+
+  await saveGameState();
+}
+
+async function endTurn(state) {
+  state.diceRolled = false;
+  state.movablePions = [];
+  state.phase = 'roll';
+  
+  // Next player (skip finished)
+  let next = (state.currentPlayerIdx + 1) % state.players.length;
+  let tries = 0;
+  while (state.players[next].finished && tries < state.players.length) {
+    next = (next + 1) % state.players.length;
+    tries++;
+  }
+  state.currentPlayerIdx = next;
+  state.turnCount++;
+  
+  await saveGameState();
+}
+
+async function saveGameState(finished = false) {
+  const room = await kvGet(`ludo_${roomCode}`);
+  if (!room) return;
+  room.game = gameState;
+  room.status = finished ? 'finished' : 'playing';
+  room.lastUpdate = Date.now();
+  await kvSet(`ludo_${roomCode}`, room);
+  renderGame();
+  if (finished) showWinner(gameState);
+}
+
+// ============================================================
+// RENDER GAME
+// ============================================================
+function renderGame() {
+  if (!gameState) return;
+  renderBoard();
+  renderScores();
+  renderDice();
+  renderTurnIndicator();
+  renderPions();
+}
+
+// Colors for SVG
+const COLOR_MAP = {
+  red: '#e74c3c', blue: '#3498db', green: '#2ecc71', yellow: '#f1c40f',
+  light_red: '#ffcdd2', light_blue: '#bbdefb', light_green: '#c8e6c9', light_yellow: '#fff9c4',
+  dark_red: '#b71c1c', dark_blue: '#0d47a1', dark_green: '#1b5e20', dark_yellow: '#f57f17',
+};
+
+let boardRendered = false;
+
+function renderBoard() {
+  if (boardRendered) return;
+  boardRendered = true;
+
+  const svg = document.getElementById('board-svg');
+  let html = '';
+
+  const C = 15;
+  const cell = 1; // each cell is 1 unit in SVG units (viewBox 0 0 15 15)
+
+  // Background
+  html += `<rect x="0" y="0" width="15" height="15" fill="#f5f5f0" rx="0.5"/>`;
+
+  // Draw cells
+  for (let r = 0; r < C; r++) {
+    for (let c = 0; c < C; c++) {
+      const color = getCellColor(r, c);
+      if (color) {
+        html += `<rect x="${c}" y="${r}" width="1" height="1" fill="${color}" stroke="rgba(0,0,0,0.08)" stroke-width="0.02"/>`;
+      } else {
+        html += `<rect x="${c}" y="${r}" width="1" height="1" fill="white" stroke="rgba(0,0,0,0.06)" stroke-width="0.02"/>`;
+      }
+    }
+  }
+
+  // Star safe cells
+  const stars = [[6,2],[2,6],[6,12],[12,8],[8,12],[12,6],[8,2],[2,8]];
+  stars.forEach(([r,c]) => {
+    html += `<text x="${c+0.5}" y="${r+0.72}" text-anchor="middle" font-size="0.55" fill="rgba(0,0,0,0.25)">★</text>`;
+  });
+
+  // Home arrow/triangle
+  html += drawHomeCenter();
+
+  // Base areas (large colored squares in corners)
+  html += drawBase('red', 0, 0);
+  html += drawBase('blue', 0, 9);
+  html += drawBase('green', 9, 9);
+  html += drawBase('yellow', 9, 0);
+
+  svg.innerHTML = html;
+}
+
+function getCellColor(r, c) {
+  // Red zone: rows 0-5, cols 0-5 (base) + path
+  if (r >= 0 && r <= 5 && c >= 0 && c <= 5) return COLOR_MAP.light_red;
+  if (r >= 0 && r <= 5 && c >= 9 && c <= 14) return COLOR_MAP.light_blue;
+  if (r >= 9 && r <= 14 && c >= 9 && c <= 14) return COLOR_MAP.light_green;
+  if (r >= 9 && r <= 14 && c >= 0 && c <= 5) return COLOR_MAP.light_yellow;
+  
+  // Home columns
+  if (r === 7 && c >= 1 && c <= 6) return COLOR_MAP.light_red; // red home
+  if (c === 7 && r >= 1 && r <= 6) return COLOR_MAP.light_blue; // blue home
+  if (r === 7 && c >= 8 && c <= 13) return COLOR_MAP.light_green; // green home
+  if (c === 7 && r >= 8 && r <= 13) return COLOR_MAP.light_yellow; // yellow home
+
+  // Safe start cells
+  if (r === 6 && c === 1) return COLOR_MAP.red;
+  if (r === 1 && c === 8) return COLOR_MAP.blue;
+  if (r === 8 && c === 13) return COLOR_MAP.green;
+  if (r === 13 && c === 6) return COLOR_MAP.yellow;
+
+  // Center
+  if (r >= 6 && r <= 8 && c >= 6 && c <= 8) return null;
+  
+  return null;
+}
+
+function drawBase(color, startR, startC) {
+  const c = COLOR_MAP[color];
+  const lc = COLOR_MAP[`light_${color}`];
+  let h = '';
+  // Outer frame
+  h += `<rect x="${startC}" y="${startR}" width="6" height="6" fill="${c}" stroke="rgba(0,0,0,0.1)" stroke-width="0.05"/>`;
+  // Inner white area
+  h += `<rect x="${startC+0.5}" y="${startR+0.5}" width="5" height="5" fill="${lc}" rx="0.3"/>`;
+  // 4 base circles
+  const positions = [[1.5,1.5],[1.5,3.5],[3.5,1.5],[3.5,3.5]];
+  positions.forEach(([dr,dc]) => {
+    h += `<circle cx="${startC+dc}" cy="${startR+dr}" r="0.7" fill="${c}" opacity="0.3" stroke="${c}" stroke-width="0.08"/>`;
+  });
+  return h;
+}
+
+function drawHomeCenter() {
+  // Draw triangles pointing to center
+  let h = '';
+  // Red triangle (left->center)
+  h += `<polygon points="6,7 8,6 8,8" fill="${COLOR_MAP.red}" opacity="0.7"/>`;
+  // Blue triangle (top->center)
+  h += `<polygon points="7,6 6,8 8,8" fill="${COLOR_MAP.blue}" opacity="0.7"/>`;
+  // Green triangle (right->center)
+  h += `<polygon points="9,7 7,6 7,8" fill="${COLOR_MAP.green}" opacity="0.7"/>`;
+  // Yellow triangle (bottom->center)
+  h += `<polygon points="7,9 6,7 8,7" fill="${COLOR_MAP.yellow}" opacity="0.7"/>`;
+  // Center star
+  h += `<text x="7.5" y="7.85" text-anchor="middle" font-size="0.9" fill="rgba(0,0,0,0.3)">★</text>`;
+  return h;
+}
+
+function renderPions() {
+  if (!gameState) return;
+  const layer = document.getElementById('pions-layer');
+  const board = document.getElementById('ludo-board');
+  const rect = board.getBoundingClientRect();
+  const sz = rect.width; // board size in px
+  const cellPx = sz / 15;
+
+  let html = '';
+
+  gameState.players.forEach(player => {
+    player.pions.forEach((pion, i) => {
+      let row, col;
+
+      if (pion.pos === 57) return; // finished, in center
+      
+      if (pion.pos === -1) {
+        // At base
+        [row, col] = BASE_POSITIONS[player.color][pion.id];
+      } else {
+        const cell = PATHS[player.color][pion.pos];
+        row = cell[0];
+        col = cell[1];
+      }
+
+      // Center of cell in px
+      const x = (col + 0.5) * cellPx;
+      const y = (row + 0.5) * cellPx;
+
+      const isMovable = gameState.phase === 'move' &&
+                        gameState.players[gameState.currentPlayerIdx].id === myPlayerId &&
+                        gameState.players[gameState.currentPlayerIdx].id === player.id &&
+                        gameState.movablePions.includes(pion.id);
+
+      html += `<div class="pion ${player.color} ${isMovable ? 'movable' : ''}"
+        style="left:${x}px;top:${y}px;"
+        onclick="clickPion('${player.id}',${pion.id})"
+        title="${player.name}">${i+1}</div>`;
+    });
+  });
+
+  layer.innerHTML = html;
+}
+
+function renderScores() {
+  const row = document.getElementById('scores-row');
+  const curPlayer = gameState.players[gameState.currentPlayerIdx];
+  
+  row.innerHTML = gameState.players.map(p => `
+    <div class="score-card ${p.color} ${p.id === curPlayer.id ? 'active' : ''}">
+      <div class="score-name">${p.name.slice(0,8)}</div>
+      <div class="score-val">${p.score}/4</div>
+    </div>
+  `).join('');
+}
+
+function renderTurnIndicator() {
+  const curPlayer = gameState.players[gameState.currentPlayerIdx];
+  const isMe = curPlayer.id === myPlayerId;
+  const el = document.getElementById('turn-indicator');
+  el.style.color = COLOR_MAP[curPlayer.color];
+  el.textContent = isMe ? '🎲 C\'est ton tour !' : `⏳ Tour de ${curPlayer.name}`;
+}
+
+const DICE_DOTS = {
+  1: [[1,1]],
+  2: [[0,0],[2,2]],
+  3: [[0,0],[1,1],[2,2]],
+  4: [[0,0],[0,2],[2,0],[2,2]],
+  5: [[0,0],[0,2],[1,1],[2,0],[2,2]],
+  6: [[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]],
+};
+
+function renderDice() {
+  if (!gameState) return;
+  const diceEl = document.getElementById('dice');
+  const msgEl = document.getElementById('dice-msg');
+  const curPlayer = gameState.players[gameState.currentPlayerIdx];
+  const isMyTurn = curPlayer.id === myPlayerId;
+
+  // Draw dots
+  const grid = Array(9).fill(false);
+  if (gameState.dice) {
+    DICE_DOTS[gameState.dice].forEach(([r,c]) => grid[r*3+c] = true);
+  }
+  diceEl.innerHTML = grid.map(d => `<div class="dot ${d ? '' : 'hidden'}"></div>`).join('');
+
+  if (!isMyTurn) {
+    diceEl.className = 'dice disabled';
+    msgEl.innerHTML = `<strong>⏳</strong>Tour de ${curPlayer.name}...`;
+  } else if (!gameState.diceRolled) {
+    diceEl.className = 'dice';
+    msgEl.innerHTML = `<strong>🎲 Lance !</strong>C'est ton tour`;
+  } else if (gameState.phase === 'move') {
+    diceEl.className = 'dice disabled';
+    msgEl.innerHTML = `<strong>Dé: ${gameState.dice}</strong>Choisis un pion à déplacer`;
+  } else {
+    diceEl.className = 'dice disabled';
+    msgEl.innerHTML = `<strong>Dé: ${gameState.dice}</strong>`;
+  }
+}
+
+// ============================================================
+// WINNER
+// ============================================================
+function showWinner(state) {
+  stopPolling();
+  const winner = state.players.find(p => p.id === state.winner);
+  if (!winner) return;
+
+  const emojis = { red: '🔴', blue: '🔵', green: '🟢', yellow: '🟡' };
+  document.getElementById('winner-emoji').textContent = emojis[winner.color] || '🏆';
+  document.getElementById('winner-title').textContent = winner.id === myPlayerId ? '🎉 Tu as gagné !' : '🏆 Victoire !';
+  document.getElementById('winner-sub').textContent = `${winner.name} a ramené tous ses pions !`;
+  document.getElementById('winner-overlay').classList.add('show');
+}
+
+function backToHome() {
+  document.getElementById('winner-overlay').classList.remove('show');
+  stopPolling();
+  roomCode = '';
+  gameState = null;
+  boardRendered = false;
+  showScreen('screen-home');
+}
+
+async function leaveGame() {
+  stopPolling();
+  roomCode = '';
+  gameState = null;
+  boardRendered = false;
+  showScreen('screen-home');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+// Pre-fill name from localStorage
+const savedName = localStorage.getItem('ludo_name');
+if (savedName) document.getElementById('inp-name').value = savedName;
+
+document.getElementById('inp-name').addEventListener('input', e => {
+  localStorage.setItem('ludo_name', e.target.value);
+});
+</script>
+</body>
+</html>
